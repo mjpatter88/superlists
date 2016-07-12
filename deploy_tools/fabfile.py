@@ -1,5 +1,5 @@
 from fabric.contrib.files import append, exists, sed
-from fabric.api import env, local, run
+from fabric.api import env, local, run, sudo
 import random
 
 REPO_URL = 'https://github.com/mjpatter88/superlists.git'
@@ -18,6 +18,10 @@ def deploy():
     _update_virtualenv(source_folder, env.user, virtual_env_folder, site_name)
     _update_static_files(source_folder, virtual_env_folder)
     _update_database(source_folder, virtual_env_folder)
+
+    _deploy_nginx_if_neccessary(source_folder, site_name)
+    _deploy_gunicorn_if_neccessary(source_folder, site_name)
+    _restart_nginx()
 
 
 def _create_directory_structure_if_neccessary(site_folder):
@@ -60,3 +64,27 @@ def _update_static_files(source_folder, virtual_env_folder):
 
 def _update_database(source_folder, virtual_env_folder):
     run('cd {} && {}/bin/python manage.py migrate --noinput'.format(source_folder, virtual_env_folder))
+
+def _deploy_nginx_if_neccessary(source_folder, site_name, host_name):
+    # write config file to sites-available
+    new_config_file = '{}/deploy_tools/{}'.format(source_folder, site_name)
+    run('cp {}/deploy_tools/nginx-template.conf {}'.format(source_folder, new_config_file))
+    sed(new_config_file, 'HOSTNAME', host_name)
+    sed(new_config_file, 'SITENAME', site_name)
+    sudo('mv {} /etc/nginx/sites-available/'.format(new_config_file)
+
+    # link to it from sites-enabled
+    # TODO start here
+
+def _deploy_gunicorn_if_neccessary(source_folder, site_name):
+    # TODO: only do the following if the service file doesn't already exist
+    new_config_file_name = 'gunicorn-{}.service'.format(site_name)
+    new_config_file = '{}/deploy_tools/{}'.format(source_folder, new_config_file_name)
+    run('cp {}/deploy_tools/gunicorn-template.service {}'.format(source_folder, new_config_file))
+    sed(new_config_file, 'SITENAME', site_name)
+    sudo('mv {} /etc/systemd/system/'.format(new_config_file))
+    # TODO: also start the servie and enable it?
+
+def _restart_nginx():
+    sudo('service nginx reload')
+

@@ -5,14 +5,14 @@
 #Enable autostart: 'sudo systemctl enable gunicorn-superlists-<env>.service
 
 [Unit]
-Description=Gunicorn daemon for superlists-<env>
+Description=Gunicorn daemon for SITENAME
 
 [Service]
-PIDFile=/tmp/superlists-<env>/pid
+PIDFile=/tmp/SITENAME/pid
 Type=simple
 User=michael
-WorkingDirectory=/home/michael/sites/superlists-<env>/source/
-ExecStart=/home/michael/.pyenv/versions/superlists/bin/gunicorn --bind unix:/tmp/superlists-<env>.socket superlists.wsgi:application
+WorkingDirectory=/home/michael/sites/SITENAME/source/
+ExecStart=/home/michael/.pyenv/versions/SITENAME/bin/gunicorn --bind unix:/tmp/SITENAME.socket superlists.wsgi:application
 ExecReload=/bin/kill -s HUP $MAINPID
 ExecStop=/bin/kill -s TERM $MAINPID
 
