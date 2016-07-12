@@ -78,12 +78,14 @@ def _deploy_nginx_if_neccessary(source_folder, site_name, host_name):
 
 def _deploy_gunicorn_if_neccessary(source_folder, site_name):
     # TODO: only do the following if the service file doesn't already exist
-    new_config_file_name = 'gunicorn-{}.service'.format(site_name)
-    new_config_file = '{}/deploy_tools/{}'.format(source_folder, new_config_file_name)
-    run('cp {}/deploy_tools/gunicorn-template.service {}'.format(source_folder, new_config_file))
-    sed(new_config_file, 'SITENAME', site_name)
-    sudo('mv {} /etc/systemd/system/'.format(new_config_file))
-    # TODO: also start the servie and enable it?
+    gunicorn_dir = '/etc/systemd/system/'
+    gunicorn_file_name = 'gunicorn-{}.service'.format(site_name)
+    if not exists(gunicorn_dir + gunicorn_file_name):
+        new_config_file = '{}/deploy_tools/{}'.format(source_folder, gunicorn_file_name)
+        run('cp {}/deploy_tools/gunicorn-template.service {}'.format(source_folder, new_config_file))
+        sed(new_config_file, 'SITENAME', site_name)
+        sudo('mv {} {}'.format(new_config_file, gunicorn_dir))
+        # TODO: also start the servie and enable it?
 
 def _restart_nginx():
     sudo('service nginx reload')
