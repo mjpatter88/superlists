@@ -19,7 +19,7 @@ def deploy():
     _update_static_files(source_folder, virtual_env_folder)
     _update_database(source_folder, virtual_env_folder)
 
-    _deploy_nginx_if_neccessary(source_folder, site_name)
+    _deploy_nginx_if_neccessary(source_folder, site_name, env.host)
     _deploy_gunicorn_if_neccessary(source_folder, site_name)
     _restart_nginx()
 
@@ -67,25 +67,31 @@ def _update_database(source_folder, virtual_env_folder):
 
 def _deploy_nginx_if_neccessary(source_folder, site_name, host_name):
     # write config file to sites-available
-    new_config_file = '{}/deploy_tools/{}'.format(source_folder, site_name)
-    run('cp {}/deploy_tools/nginx-template.conf {}'.format(source_folder, new_config_file))
-    sed(new_config_file, 'HOSTNAME', host_name)
-    sed(new_config_file, 'SITENAME', site_name)
-    sudo('mv {} /etc/nginx/sites-available/'.format(new_config_file)
+    nginx_dir = '/etc/nginx/sites-available/'
+    nginx_file_name = site_name
 
-    # link to it from sites-enabled
-    # TODO start here
+    if not exists(nginx_dir + nginx_file_name):
+        new_config_file = '{}/deploy_tools/{}'.format(source_folder, site_name)
+        run('cp {}/deploy_tools/nginx-template.conf {}'.format(source_folder, new_config_file))
+        sed(new_config_file, 'HOSTNAME', host_name)
+        sed(new_config_file, 'SITENAME', site_name)
+        sudo('mv {} /etc/nginx/sites-available/'.format(new_config_file))
+        sudo('ln -s /etc/nginx/sites-available/{} /etc/nginx/sites-enabled/{}'.format(site_name, site_name))
+
 
 def _deploy_gunicorn_if_neccessary(source_folder, site_name):
-    # TODO: only do the following if the service file doesn't already exist
     gunicorn_dir = '/etc/systemd/system/'
     gunicorn_file_name = 'gunicorn-{}.service'.format(site_name)
+
     if not exists(gunicorn_dir + gunicorn_file_name):
         new_config_file = '{}/deploy_tools/{}'.format(source_folder, gunicorn_file_name)
         run('cp {}/deploy_tools/gunicorn-template.service {}'.format(source_folder, new_config_file))
         sed(new_config_file, 'SITENAME', site_name)
         sudo('mv {} {}'.format(new_config_file, gunicorn_dir))
-        # TODO: also start the servie and enable it?
+
+        # start the servie and enable it
+        sudo('systemctl start {}'.format(gunicorn_file_name))
+        sudo('systemctl enable {}'.format(gunicorn_file_name))
 
 def _restart_nginx():
     sudo('service nginx reload')
