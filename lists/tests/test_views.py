@@ -52,7 +52,7 @@ class ListViewTest(TestCase):
         correct_list = List.objects.create()
         new_item_text = 'A new item for an existing list'
 
-        self.client.post('/lists/{}/'.format(correct_list.id), data={'item_text': new_item_text})
+        self.client.post('/lists/{}/'.format(correct_list.id), data={'text': new_item_text})
 
         self.assertEqual(Item.objects.count(), 1)
         new_item = Item.objects.first()
@@ -64,25 +64,25 @@ class ListViewTest(TestCase):
         correct_list = List.objects.create()
         new_item_text = 'A new item for an existing list'
 
-        response = self.client.post('/lists/{}/'.format(correct_list.id), data={'item_text': new_item_text})
+        response = self.client.post('/lists/{}/'.format(correct_list.id), data={'text': new_item_text})
 
         self.assertRedirects(response, '/lists/{}/'.format(correct_list.id))
 
     def test_validation_errors_are_sent_back_to_home_page_template(self):
-        response = self.client.post('/lists/new', data={'item_text': ''})
+        response = self.client.post('/lists/new', data={'text': ''})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'home.html')
         expected_error = escape("You can't have an empty list item.")
         self.assertContains(response, expected_error)
 
     def test_invalid_list_items_arent_saved(self):
-        self.client.post('/lists/new', data={'item_text': ''})
+        self.client.post('/lists/new', data={'text': ''})
         self.assertEqual(List.objects.count(), 0)
         self.assertEqual(Item.objects.count(), 0)
 
     def test_validation_errors_end_up_on_lists_page(self):
         list_ = List.objects.create()
-        response = self.client.post('/lists/{}/'.format(list_.id), data={'item_text': ''})
+        response = self.client.post('/lists/{}/'.format(list_.id), data={'text': ''})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'list.html')
         expected_error = escape("You can't have an empty list item.")
@@ -92,14 +92,14 @@ class ListViewTest(TestCase):
 class NewListTest(TestCase):
     def test_saving_a_POST_request(self):
         item_text = 'A new list item'
-        self.client.post('/lists/new', data={'item_text': item_text})
+        self.client.post('/lists/new', data={'text': item_text})
 
         self.assertEqual(Item.objects.count(), 1)
         new_item = Item.objects.first()
         self.assertEqual(new_item.text, item_text)
 
     def test_redirects_after_POST(self):
-        response = self.client.post('/lists/new', data={'item_text': 'A new list item'})
+        response = self.client.post('/lists/new', data={'text': 'A new list item'})
         new_list = List.objects.first()
 
         self.assertEqual(response.status_code, 302)
